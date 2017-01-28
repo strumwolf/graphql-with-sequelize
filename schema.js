@@ -1,142 +1,163 @@
 import {
   GraphQLObjectType,
-  GraphQLString,
   GraphQLInt,
-  GraphQLSchema,
+  GraphQLString,
   GraphQLList,
-  GraphQLNonNull
+  GraphQLSchema,
+  GraphQLNonNull,
 } from 'graphql';
 
 import Db from './db';
 
 const Post = new GraphQLObjectType({
-  name: 'Post',
-  description: 'Blog post',
-  fields () {
-    return {
-      title: {
-        type: GraphQLString,
-        resolve (post) {
-          return post.title;
-        }
+  name: 'Posts',
+  description: 'This represents posts',
+  fields: () => ({
+    id: {
+      type: GraphQLInt,
+      resolve(post) {
+        return post.id;
       },
-      content: {
-        type: GraphQLString,
-        resolve (post) {
-          return post.content;
-        }
+    },
+    title: {
+      type: GraphQLString,
+      resolve(post) {
+        return post.title;
       },
-      person: {
-        type: Person,
-        resolve (post) {
-          return post.getPerson();
-        }
-      }
-    };
-  }
+    },
+    content: {
+      type: GraphQLString,
+      resolve(post) {
+        return post.content;
+      },
+    },
+    person: {
+      type: Person,
+      resolve(post) {
+        return post.getPerson();
+      },
+    },
+  }),
 });
 
 const Person = new GraphQLObjectType({
   name: 'Person',
-  description: 'This represents a Person',
-  fields: () => {
-    return {
-      id: {
-        type: GraphQLInt,
-        resolve (person) {
-          return person.id;
-        }
+  description: 'This represents a person',
+  fields: () => ({
+    id: {
+      type: GraphQLInt,
+      resolve(person) {
+        return person.id;
       },
-      firstName: {
-        type: GraphQLString,
-        resolve (person) {
-          return person.firstName;
-        }
+    },
+    firstName: {
+      type: GraphQLString,
+      resolve(person) {
+        return person.firstName;
       },
-      lastName: {
-        type: GraphQLString,
-        resolve (person) {
-          return person.lastName;
-        }
+    },
+    lastName: {
+      type: GraphQLString,
+      resolve(person) {
+        return person.lastName;
       },
-      email: {
-        type: GraphQLString,
-        resolve (person) {
-          return person.email;
-        }
+    },
+    email: {
+      type: GraphQLString,
+      resolve(person) {
+        return person.email;
       },
-      posts: {
-        type: new GraphQLList(Post),
-        resolve (person) {
-          return person.getPosts();
-        }
-      }
-    };
-  }
+    },
+    posts: {
+      type: new GraphQLList(Post),
+      resolve(person) {
+        return person.getPosts();
+      },
+    },
+  }),
 });
 
-const Query = new GraphQLObjectType({
+const query = new GraphQLObjectType({
   name: 'Query',
-  description: 'Root query object',
-  fields: () => {
-    return {
-      people: {
-        type: new GraphQLList(Person),
-        args: {
-          id: {
-            type: GraphQLInt
-          },
-          email: {
-            type: GraphQLString
-          }
+  description: 'This is a root query',
+  fields: () => ({
+    people: {
+      type: new GraphQLList(Person),
+      args: {
+        id: {
+          type: GraphQLInt,
         },
-        resolve (root, args) {
-          return Db.models.person.findAll({ where: args });
-        }
+        email: {
+          type: GraphQLString,
+        },
       },
-      posts: {
-        type: new GraphQLList(Post),
-        resolve (root, args) {
-          return Db.models.post.findAll({ where: args });
-        }
-      }
-    };
-  }
+      resolve(root, args) {
+        return Db.models.person.findAll({ where: args });
+      },
+    },
+    posts: {
+      type: new GraphQLList(Post),
+      resolve(root, args) {
+        return Db.models.post.findAll({ where: args });
+      },
+    },
+  }),
 });
 
-const Mutation = new GraphQLObjectType({
-  name: 'Mutations',
-  description: 'Functions to set stuff',
-  fields () {
+const mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  description: 'Functions to create and update stuff',
+  fields() {
     return {
       addPerson: {
         type: Person,
         args: {
           firstName: {
-            type: new GraphQLNonNull(GraphQLString)
+            type: new GraphQLNonNull(GraphQLString),
           },
           lastName: {
-            type: new GraphQLNonNull(GraphQLString)
+            type: new GraphQLNonNull(GraphQLString),
           },
           email: {
-            type: new GraphQLNonNull(GraphQLString)
-          }
+            type: new GraphQLNonNull(GraphQLString),
+          },
         },
-        resolve (source, args) {
+        resolve(_, args) {
           return Db.models.person.create({
             firstName: args.firstName,
             lastName: args.lastName,
-            email: args.email.toLowerCase()
+            email: args.email.toLowerCase(),
           });
-        }
-      }
+        },
+      },
+      addPost: {
+        type: Post,
+        args: {
+          personId: {
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+          title: {
+            type: new GraphQLNonNull(GraphQLString),
+          },
+          content: {
+            type: new GraphQLNonNull(GraphQLString),
+          },
+        },
+        resolve(_, args) {
+          return Db.models.post.create({
+            title: args.title,
+            content: args.content,
+            personId: args.personId,
+          });
+        },
+      },
     };
-  }
+  },
 });
 
 const Schema = new GraphQLSchema({
-  query: Query,
-  mutation: Mutation
+  query,
+  mutation,
 });
 
 export default Schema;
